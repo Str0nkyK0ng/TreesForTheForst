@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "perlin-noise": "^0.0.1",
+    "simplex-noise": "^4.0.3"
+  }
+}
