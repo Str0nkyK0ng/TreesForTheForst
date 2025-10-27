@@ -15,8 +15,6 @@ canvas.height = window.innerHeight;
 ctx!.fillStyle = '#102200ff';
 ctx!.fillRect(0, 0, canvas.width, canvas.height);
 let tempTree = new Tree();
-tempTree.noise = badNoise;
-tempTree.draw(ctx!, canvas.width / 2, canvas.height / 2);
 
 document.addEventListener('click', (e) => {
   tempTree = new Tree();
@@ -25,3 +23,23 @@ document.addEventListener('click', (e) => {
   let y = e.clientY;
   tempTree.animatedDraw(ctx!, x, y);
 });
+
+//define 5 trees at random positions
+let trees: Tree[] = [];
+for (let i = 0; i < 5; i++) {
+  let tree = new Tree();
+  tree.noise = badNoise;
+  trees.push(tree);
+}
+
+function draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+  ctx!.fillStyle = '#102200ff';
+  ctx!.fillRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < trees.length; i++) {
+    let x = (canvas.width / (trees.length + 1)) * (i + 1);
+    let y = canvas.height / 2 + (Math.random() * 100 - 50);
+    trees[i].drawRing(ctx!, x, y);
+  }
+}
+
+draw(canvas, ctx!);

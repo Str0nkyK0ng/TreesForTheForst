@@ -18,7 +18,7 @@ class Tree {
   radiusStep: number;
   noise: any;
   size: number;
-  constructor() {
+  constructor(scale: number = 1) {
     //seed random
     this.totalNoise = [];
     for (let i = 0; i <= CIRCULAR_STEPS; i++) {
@@ -27,7 +27,7 @@ class Tree {
     this.bigI = 1;
     this.thickRoot = Math.round(Math.random() * 20 + 5);
     this.radiusStep = RADIUS_STEP;
-    this.size = Math.floor(Math.random() * 15 + 15);
+    this.size = Math.floor(Math.random() * 15 + 15) * scale;
   }
 
   // seed random
@@ -49,37 +49,19 @@ class Tree {
     centerY: number
   ) {
     let i = 0;
-    const drawStep = () => {
-      if (i++ > this.size) return;
-      this.drawRing(ctx, centerX, centerY);
-      requestAnimationFrame(drawStep);
-    };
-    drawStep();
+    this.drawRing(ctx, centerX, centerY);
+
+    setInterval(() => {
+      if (i < this.size) {
+        this.drawRing(ctx, centerX, centerY);
+        i++;
+      }
+    }, 1000);
   }
 
   drawRing(ctx: CanvasRenderingContext2D, centerX: number, centerY: number) {
     // tilt angle to make the ring look 3D (radians)
-    const tilt = -Math.PI / 4; // ~30 degrees
-    const focal = 200; // perspective focal length (bigger -> less perspective)
     ctx.beginPath();
-
-    // small helper to convert hex to rgba with alpha
-    const hexToRGBA = (hex: string, alpha: number) => {
-      const h = hex.replace('#', '');
-      const bigint = parseInt(
-        h.length === 3
-          ? h
-              .split('')
-              .map((c) => c + c)
-              .join('')
-          : h,
-        16
-      );
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
-      return `rgba(${r},${g},${b},${alpha})`;
-    };
 
     let currentPath: { x: number; y: number }[] = [];
 
@@ -91,9 +73,8 @@ class Tree {
     }
 
     // compute expected max z-range for shading normalization (approx)
-    const maxPossibleRadius =
+    const radius =
       BASE_RADIUS * (this.totalNoise[0] + this.radiusStep * this.size);
-    const maxZ = Math.max(1, maxPossibleRadius * Math.sin(tilt));
 
     for (let i = 0; i <= CIRCULAR_STEPS; i++) {
       // base noise-influenced radius & line width
@@ -106,24 +87,14 @@ class Tree {
         noiseRadius * lerpFactor + this.totalNoise[0] * (1 - lerpFactor);
 
       // 3D point before rotation: circle in X-Y plane
-      const x3 = trueNoise * Math.cos(angle);
-      const y3 = trueNoise * Math.sin(angle);
-      const z3 = 0;
-
-      // rotate around X axis by 'tilt' so the circle tilts toward/away from viewer
-      const yR = y3 * Math.cos(tilt) - z3 * Math.sin(tilt); // equals y3 * cos(tilt)
-      const zR = y3 * Math.sin(tilt) + z3 * Math.cos(tilt); // equals y3 * sin(tilt)
-
-      // simple perspective projection
-      const scale = focal / (focal + zR); // >0, smaller when zR large positive (farther)
-      const x = centerX + x3 * scale;
-      const y = centerY + yR * scale;
+      const x = trueNoise * Math.cos(angle) + centerX;
+      const y = trueNoise * Math.sin(angle) + centerY;
 
       // shading factor based on zR (closer -> brighter). clamp in [0.3,1]
       ctx.strokeStyle = RING_COLORS[this.bigI % RING_COLORS.length];
 
       // adjust lineWidth by perspective so nearer parts appear thicker
-      ctx.lineWidth = Math.max(0.5, ctx.lineWidth * scale * 1.5);
+      ctx.lineWidth = Math.max(0.5, ctx.lineWidth * 1.5);
 
       // Store first point for closing the path (keeps original logic)
       if (i == 0) {
