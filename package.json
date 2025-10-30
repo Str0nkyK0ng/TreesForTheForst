@@ -5,5 +5,9 @@
   "dependencies": {
     "perlin-noise": "^0.0.1",
     "simplex-noise": "^4.0.3"
+  },
+  "scripts": {
+    "build":"tsc",
+    "dev":"npx tsc --watch"
   }
 }
