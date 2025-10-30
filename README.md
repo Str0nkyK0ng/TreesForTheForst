@@ -1,0 +1,1 @@
+Start watching with `npx tsc --watch`

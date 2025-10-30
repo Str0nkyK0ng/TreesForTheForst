@@ -1,6 +1,9 @@
 import { Tree } from './tree.js';
 import { Noise } from './noise.js';
+import { Player } from './player.js';
 const canvas = document.getElementById('c');
+
+let center = { x: 0, y: 0 };
 
 function badNoise(i: number): number {
   return new Noise(Date.now()).noise2D(i, i);
@@ -12,34 +15,44 @@ if (!(canvas instanceof HTMLCanvasElement)) {
 const ctx = canvas.getContext('2d', { alpha: false });
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
-ctx!.fillStyle = '#102200ff';
+ctx!.fillStyle = '#B9889D';
 ctx!.fillRect(0, 0, canvas.width, canvas.height);
-let tempTree = new Tree();
+let tempTree = new Tree(1, badNoise);
+
+//scatter some mobius marks on the ground (small circles and dashes)
+for (let i = 0; i < 200; i++) {
+  let randomX = Math.random() * canvas.width;
+  let randomY = Math.random() * canvas.height;
+  let randomRad = Math.random() * 3;
+  let randomRad2 = Math.random() * 3;
+
+  ctx.strokeStyle = 'black';
+  ctx.beginPath();
+  ctx.ellipse(randomX, randomY, randomRad, randomRad2, 0, 360, 0);
+  ctx.stroke();
+}
+
+//draw leafs
+let leafColor = '#9F94D9';
+for (let i = 0; i < 3; i++) {
+  let randomX = Math.random() * canvas.width;
+  let randomY = Math.random() * canvas.height;
+  let randomRad = Math.random() * 5;
+  let randomRad2 = Math.random() * 5;
+
+  ctx.strokeStyle = leafColor;
+  ctx.beginPath();
+  ctx.ellipse(randomX, randomY, randomRad, randomRad2, 0, 360, 0);
+  ctx.stroke();
+}
+
+tempTree.animatedDrawRing(
+  ctx!,
+  canvas.width / 2 - center.x,
+  canvas.height / 2 - center.y
+);
 
 document.addEventListener('click', (e) => {
-  tempTree = new Tree();
-  tempTree.noise = badNoise;
-  let x = e.clientX;
-  let y = e.clientY;
-  tempTree.animatedDraw(ctx!, x, y);
+  let t = new Tree(1, badNoise);
+  t.animatedDrawRing(ctx!, e.clientX - center.x, e.clientY - center.y);
 });
-
-//define 5 trees at random positions
-let trees: Tree[] = [];
-for (let i = 0; i < 5; i++) {
-  let tree = new Tree();
-  tree.noise = badNoise;
-  trees.push(tree);
-}
-
-function draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
-  ctx!.fillStyle = '#102200ff';
-  ctx!.fillRect(0, 0, canvas.width, canvas.height);
-  for (let i = 0; i < trees.length; i++) {
-    let x = (canvas.width / (trees.length + 1)) * (i + 1);
-    let y = canvas.height / 2 + (Math.random() * 100 - 50);
-    trees[i].drawRing(ctx!, x, y);
-  }
-}
-
-draw(canvas, ctx!);
