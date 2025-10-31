@@ -12,6 +12,13 @@ class Position {
     this.x = x;
     this.y = y;
   }
+  //add operation
+  add(other: Position): Position {
+    return new Position(this.x + other.x, this.y + other.y);
+  }
+  mult(factor: number): Position {
+    return new Position(this.x * factor, this.y * factor);
+  }
 }
 
 class Tree {
@@ -77,7 +84,7 @@ class Tree {
       const x = trueNoise * Math.cos(angle);
       const y = trueNoise * Math.sin(angle);
       // Store first point for closing the path (keeps original logic)
-      currentPath.push({ x, y });
+      currentPath.push(new Position(x, y));
     }
 
     // close
@@ -144,6 +151,9 @@ class Tree {
     for (let r = 0; r < this.ringData.length; r++) {
       setTimeout(() => {
         this.drawShadow(ctx, x + 10, y + 10, r);
+        if (r == this.ringData.length - 5) {
+          this.drawTendrils(ctx, this.ringData.length - 1, x, y, 4);
+        }
         this.fillRing(ctx, r, x, y);
 
         for (let i = 0; i < r; i++) {
@@ -153,7 +163,79 @@ class Tree {
           this.drawLines(ctx, x, y);
         }
       }, progress);
-      progress += 1000;
+      progress += 10;
+    }
+  }
+
+  // draw tendrils
+  drawTendrils(
+    ctx: CanvasRenderingContext2D,
+    ringIndex: number,
+    x: number,
+    y: number,
+    numDrils: number
+  ) {
+    let lastRing = this.ringData[ringIndex];
+
+    for (let i = 0; i < numDrils; i++) {
+      //generate a random angle
+      let randomEdge = Math.floor(Math.random() * lastRing.length);
+      let followingEdge = (randomEdge + 3) % lastRing.length;
+      let midPoint = lastRing[randomEdge]
+        .add(lastRing[followingEdge])
+        .mult(0.5);
+
+      // edge/tangent and normal
+      let edgeAngle = Math.atan2(
+        lastRing[followingEdge].y - lastRing[randomEdge].y,
+        lastRing[followingEdge].x - lastRing[randomEdge].x
+      );
+      let normalAngle = edgeAngle + Math.PI / 2;
+      let offset = Math.random() * 30 + 20;
+
+      // final tip point pushed out along the normal
+      let newPoint = new Position(
+        midPoint.x + Math.cos(normalAngle) * -offset,
+        midPoint.y + Math.sin(normalAngle) * -offset
+      );
+
+      ctx.fillStyle = '#B96C86';
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 1;
+
+      // tangent unit vector along the edge
+      const tx = Math.cos(edgeAngle);
+      const ty = Math.sin(edgeAngle);
+
+      // start with a base width between side points, shrink it each iteration
+      let baseWidth = Math.max(6, offset / 2);
+
+      // perform 3 refinements: create side points around the midpoint with decreasing width,
+      // and a point moving progressively toward the tip (newPoint), then draw the small triangle
+      for (let k = 0; k < 3; k++) {
+        const shrinkFactor = 1 - k * 0.35; // reduce width each iteration
+        const half = (baseWidth * shrinkFactor) / 2;
+
+        // side points along the edge (tangent) around the midpoint
+        const left = midPoint.add(new Position(-tx * half, -ty * half));
+        const right = midPoint.add(new Position(tx * half, ty * half));
+
+        // inner point moves from midpoint toward the tip; later iterations move closer
+        const toTip = new Position(
+          newPoint.x - midPoint.x,
+          newPoint.y - midPoint.y
+        );
+        const progress = (k + 1) / 4; // 0.25, 0.5, 0.75
+        const inner = midPoint.add(toTip.mult(progress));
+
+        ctx.beginPath();
+        ctx.moveTo(left.x + x, left.y + y);
+        ctx.lineTo(right.x + x, right.y + y);
+        ctx.lineTo(inner.x + x, inner.y + y);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fill();
+      }
     }
   }
 
